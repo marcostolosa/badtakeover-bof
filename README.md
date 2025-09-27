@@ -1,4 +1,8 @@
 # BadTakeover-BOF
-Beacon Object File for using the BadSuccessor technique for account takeover
+Shortly after the release of Yuval Gordon’s [(YuG0rd)](https://x.com/YuG0rd) [BadSuccessor](https://www.akamai.com/blog/security-research/abusing-dmsa-for-privilege-escalation-in-active-directory) dMSA privilege escalation vector, Microsoft issued a patch fixing the flawed logic in how the Key Distribution Center (KDC) acknowledged Delegated Managed Service Account (dMSA) migration, without protecting sensitive writeable attributes when a dMSA object is controlled by the current user. In a follow-up [blog post](https://www.akamai.com/blog/security-research/badsuccessor-is-dead-analyzing-badsuccessor-patch) from Yuval, he noted that the technique could still be utilized for account takeover on principals in which we control their object properties, like a Resource-Based Constrained Delegation (RBCD) attack on computer objects or Shadow Credentials attack. 
+
+This motivated me to not only update my previous tooling in .NET for dMSA abuse titled [SharpSuccessor](https://github.com/logangoins/SharpSuccessor) but also create some additional tooling for executing this attack in a stealthy manner during Red Team Operations.
+
+Introducing BadTakeover, a Beacon Object File (BOF) for performing account takeover using the BadSuccessor technique. Using a write primitive over a target object, in addition to the CreateChild edge over an Organizational Unit (OU), it’s possible to impersonate the target object for account takeover via requesting a ticket for the newly created dMSA. 
 
 <img width="1407" height="760" alt="2025-09-26 22_07_18-" src="https://github.com/user-attachments/assets/d3cf0f24-010a-4264-aad0-3045826505ee" />
