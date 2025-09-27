@@ -28,6 +28,9 @@ DECLSPEC_IMPORT char *MSVCRT$strcpy(char *dst, const char *src);
 DECLSPEC_IMPORT char *MSVCRT$strcat(char *dst, const char *src);
 
 void go(char *args, int len) {
+
+    BeaconPrintf(CALLBACK_OUTPUT, "[*] BadTakeover BOF started\n");
+    BeaconPrintf(CALLBACK_OUTPUT, "[*] Author @_logangoins\n\n");
     datap parser;
     BeaconDataParse(&parser, args, len);
 
