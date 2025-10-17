@@ -1,4 +1,7 @@
 # BadTakeover-BOF
+
+An associated blog post covering this BOF can be found at: https://specterops.io/blog/2025/10/20/the-near-return-of-the-king-account-takeover-using-the-badsuccessor-technique/
+
 Shortly after the release of Yuval Gordon’s [(YuG0rd)](https://x.com/YuG0rd) [BadSuccessor](https://www.akamai.com/blog/security-research/abusing-dmsa-for-privilege-escalation-in-active-directory) dMSA privilege escalation vector, Microsoft issued a patch fixing the flawed logic in how the Key Distribution Center (KDC) acknowledged Delegated Managed Service Account (dMSA) migration, without protecting sensitive writeable attributes when a dMSA object is controlled by the current user. In a follow-up [blog post](https://www.akamai.com/blog/security-research/badsuccessor-is-dead-analyzing-badsuccessor-patch) from Yuval, he noted that the technique could still be utilized for account takeover on principals in which we control their object properties, like a Resource-Based Constrained Delegation (RBCD) attack on computer objects or Shadow Credentials attack. 
 
 This motivated me to not only update my previous tooling in .NET for dMSA abuse titled [SharpSuccessor](https://github.com/logangoins/SharpSuccessor) but also create some additional tooling for executing this attack in a stealthy manner during Red Team Operations.
