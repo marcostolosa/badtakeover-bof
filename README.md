@@ -21,7 +21,7 @@ The BOF takes the following parameter values and data types:
 
 Execution of the BOF in an Apollo agent as an example is shown below:
 
-<img width="1407" height="760" alt="2025-09-26 22_07_18-" src="https://github.com/user-attachments/assets/d3cf0f24-010a-4264-aad0-3045826505ee" />
+<img width="1445" height="530" alt="image" src="https://github.com/user-attachments/assets/3e0f7e7b-7eac-4c58-a002-007fdf454bd4" />
 
 Unfortunately for requesting the dMSA ticket, dMSA authentication has not been implemented into BOF related Kerberos repositories such as [Kerbeus-BOF](https://github.com/RalfHacker/Kerbeus-BOF) or [nanorobeus](https://github.com/wavvs/nanorobeus), meaning that unfortunately to request the ticket impersonating a target principal you'll still be required to execute Rubeus (.NET assembly). I hope in the future an established Kerberos BOF respository will expand their `asktgs` functionality to support dMSA authentication once Windows Server 2025 is more popular in corporate environments. 
 
